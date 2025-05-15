@@ -66,31 +66,42 @@ def update_purchase_order(order_id):
     try:
         order = PurchaseOrder.query.get_or_404(order_id)
         data = request.get_json()
+        logger.debug(f"Received update data for order {order_id}: {data}")
 
-        if data.get('customer'):
+        if not data:
+            logger.error("No JSON data received in request")
+            return jsonify({"error": "No data provided"}), 400
+
+        # Update customer information
+        if 'customer' in data:
             order.customer = data['customer']
-        if data.get('lineItems'):
+
+        # Update line items and recalculate totals
+        if 'lineItems' in data:
             order.line_items = data['lineItems']
-        if data.get('subtotal'):
             order.subtotal = float(data['subtotal'])
-        if data.get('taxRate'):
-            order.tax_rate = float(data['taxRate'])
-        if data.get('taxAmount'):
             order.tax_amount = float(data['taxAmount'])
-        if data.get('total'):
             order.total = float(data['total'])
-        if data.get('notes') is not None:
+
+        # Update other fields
+        if 'taxRate' in data:
+            order.tax_rate = float(data['taxRate'])
+        if 'notes' in data:
             order.notes = data['notes']
-        if data.get('status'):
+        if 'status' in data:
             order.status = data['status']
 
+        # Update modified timestamp
+        order.updated_at = datetime.utcnow()
+
         db.session.commit()
+        logger.info(f"Successfully updated purchase order {order_id}")
         return jsonify(order.to_dict())
 
     except Exception as e:
-        logger.error(f"Error updating purchase order: {str(e)}")
+        logger.error(f"Error updating purchase order {order_id}: {str(e)}")
         db.session.rollback()
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/purchase-orders/<string:order_id>', methods=['DELETE'])
 def delete_purchase_order(order_id):
