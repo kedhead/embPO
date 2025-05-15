@@ -62,10 +62,10 @@ export const PurchaseOrderDetails: React.FC = () => {
 
   const calculateTotals = (items: LineItem[]) => {
     const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const taxRate = order?.taxRate || 0.1; // Default to 10% if not set
+    const taxRate = (order?.taxRate || 0.1) / 100; // Convert percentage to decimal
     const taxAmount = subtotal * taxRate;
     const total = subtotal + taxAmount;
-    return { subtotal, taxRate, taxAmount, total };
+    return { subtotal, taxRate: taxRate * 100, taxAmount, total };
   };  const handlePrint = () => {
     const style = document.createElement('style');
     style.innerHTML = setupPrintSettings();
@@ -281,7 +281,7 @@ export const PurchaseOrderDetails: React.FC = () => {
               </div>
               <div className="flex justify-between text-gray-700">
                 <span>Tax Rate:</span>
-                <span className="font-medium">{(order.taxRate * 100).toFixed(0)}%</span>
+                <span className="font-medium">{order.taxRate.toFixed(1)}%</span>
               </div>
               <div className="flex justify-between text-gray-700">
                 <span>Tax Amount:</span>
