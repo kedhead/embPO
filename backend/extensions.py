@@ -5,8 +5,14 @@ import logging
 import os
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger('stitchpay')
 
 # Initialize Flask app
 app = Flask(__name__)

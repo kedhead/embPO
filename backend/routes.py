@@ -107,10 +107,16 @@ def update_purchase_order(order_id):
 def delete_purchase_order(order_id):
     try:
         order = PurchaseOrder.query.get_or_404(order_id)
+        if not order:
+            return jsonify({"error": f"Purchase order with ID {order_id} not found"}), 404
+        
+        logger.info(f"Attempting to delete purchase order {order_id}")
         db.session.delete(order)
         db.session.commit()
+        logger.info(f"Successfully deleted purchase order {order_id}")
         return '', 204
     except Exception as e:
-        logger.error(f"Error deleting purchase order: {str(e)}")
+        error_msg = str(e)
+        logger.error(f"Error deleting purchase order {order_id}: {error_msg}")
         db.session.rollback()
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return jsonify({"error": f"Failed to delete purchase order: {error_msg}"}), 500
