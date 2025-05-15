@@ -41,11 +41,10 @@ def create_purchase_order():
             customer=data['customer'],
             line_items=data['lineItems'],
             subtotal=float(data['subtotal']),
-            tax_rate=float(data['taxRate']),
-            tax_amount=float(data['taxAmount']),
+            tax_rate=float(data['taxRate']),            tax_amount=float(data['taxAmount']),
             total=float(data['total']),
             notes=data.get('notes'),
-            status='pending'
+            status='unpaid'
         )
 
         db.session.add(new_order)

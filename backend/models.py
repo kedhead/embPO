@@ -28,7 +28,7 @@ class PurchaseOrder(db.Model):
     tax_amount = db.Column(db.Float, nullable=False)
     total = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text)
-    status = db.Column(db.String(20), nullable=False, default='pending')
+    status = db.Column(db.String(20), nullable=False, default='unpaid')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def to_dict(self):
