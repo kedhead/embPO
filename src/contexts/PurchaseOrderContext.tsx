@@ -86,25 +86,44 @@ export const PurchaseOrderProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updatePurchaseOrder = async (id: string, updates: Partial<PurchaseOrder>) => {
     try {
+      // Ensure we're sending the complete line items array
+      if (updates.lineItems) {
+        console.log('Updating order with line items:', updates.lineItems);
+      }
       const response = await fetch(`${API_URL}/purchase-orders/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify(updates),
+        body: JSON.stringify({
+          ...updates,
+          // Ensure line items have all required fields
+          lineItems: updates.lineItems?.map((item: LineItem) => ({
+            id: item.id || `temp-${Date.now()}-${Math.random()}`,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice
+          }))
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update purchase order');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
+        throw new Error(errorData.error || `Server returned ${response.status}: ${response.statusText}`);
       }
 
       const updatedOrder = await response.json();
       setPurchaseOrders(prev =>
         prev.map(order => (order.id === id ? updatedOrder : order))
       );
+      return updatedOrder;
     } catch (error) {
       console.error('Error updating purchase order:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw new Error(`Failed to update purchase order: ${error.message}`);
+      }
+      throw new Error('Failed to update purchase order: Network error');
     }
   };
 

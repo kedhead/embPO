@@ -1,16 +1,17 @@
-export interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-}
+export type PurchaseOrderStatus = 'pending' | 'completed' | 'cancelled';
 
 export interface LineItem {
   id: string;
   description: string;
   quantity: number;
   unitPrice: number;
+}
+
+export interface Customer {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
 }
 
 export interface PurchaseOrder {
@@ -23,7 +24,7 @@ export interface PurchaseOrder {
   taxAmount: number;
   total: number;
   notes?: string;
-  status: 'pending' | 'approved' | 'cancelled';
+  status: PurchaseOrderStatus;
   createdAt: string;
   updatedAt?: string;
 }
