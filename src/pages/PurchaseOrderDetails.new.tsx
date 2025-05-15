@@ -89,6 +89,14 @@ const PurchaseOrderDetails: React.FC = () => {
     window.alert(`Purchase order would be emailed to ${order.customer.email}`);
   };
 
+  const handleDeleteConfirm = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -130,13 +138,19 @@ const PurchaseOrderDetails: React.FC = () => {
               >
                 <Mail className="h-4 w-4 mr-1" />
                 Email
-              </button>
-              <button
+              </button>              <button
                 onClick={startEditing}
                 className="flex items-center px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 <Edit className="h-4 w-4 mr-1" />
                 Edit
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex items-center px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 ml-2"
+              >
+                <Trash className="h-4 w-4 mr-1" />
+                Delete
               </button>
             </>
           ) : (
@@ -181,15 +195,13 @@ const PurchaseOrderDetails: React.FC = () => {
                   }
                 }}
                 className="border rounded p-2"
-              >
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
+              >                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
                 <option value="cancelled">Cancelled</option>
               </select>
-            ) : (
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+            ) : (              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                 displayOrder.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                displayOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
+                displayOrder.status === 'approved' ? 'bg-green-100 text-green-800' :
                 'bg-red-100 text-red-800'
               }`}>
                 {displayOrder.status.charAt(0).toUpperCase() + displayOrder.status.slice(1)}
@@ -534,7 +546,7 @@ const PurchaseOrderDetails: React.FC = () => {
         {!isEditing && (
           <div className="mt-6 pt-6 border-t">
             <button
-              onClick={() => setShowDeleteConfirm(true)}
+              onClick={handleDeleteConfirm}
               className="text-red-600 hover:text-red-700 flex items-center"
             >
               <Trash className="h-4 w-4 mr-1" />
@@ -546,20 +558,22 @@ const PurchaseOrderDetails: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold mb-4">Confirm Delete</h3>
-            <p className="mb-6">Are you sure you want to delete this purchase order? This action cannot be undone.</p>
-            <div className="flex justify-end gap-4">
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
+            <p className="mb-6 text-gray-700">
+              Are you sure you want to delete purchase order <span className="font-medium">#{order?.orderNumber}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-4">
               <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
+                onClick={handleCancelDelete}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
               >
                 Delete
               </button>

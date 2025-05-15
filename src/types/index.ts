@@ -27,3 +27,5 @@ export interface PurchaseOrder {
   createdAt: string;
   updatedAt?: string;
 }
+
+export type PurchaseOrderStatus = 'pending' | 'approved' | 'cancelled';

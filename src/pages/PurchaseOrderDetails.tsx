@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { usePurchaseOrder } from '../contexts/PurchaseOrderContext';
 import { PurchaseOrder, LineItem } from '../types';
 import { setupPrintSettings } from '../utils/printSettings';
 import { CompanyHeader } from '../components/CompanyHeader';
+import { Trash } from 'lucide-react';
 
 export const PurchaseOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { getPurchaseOrder, updatePurchaseOrder } = usePurchaseOrder();
+  const navigate = useNavigate();
+  const { getPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder } = usePurchaseOrder();
   const [order, setOrder] = useState<PurchaseOrder | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedLineItems, setEditedLineItems] = useState<LineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -108,6 +111,25 @@ export const PurchaseOrderDetails: React.FC = () => {
     }
   };
 
+  const handleDeleteConfirm = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  const handleDelete = async () => {
+    if (!order || !id) return;
+    
+    try {
+      await deletePurchaseOrder(id);
+      navigate('/purchase-orders');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete order');
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div className="error">{error}</div>;
   if (!order) return <div>Order not found</div>;
@@ -116,8 +138,7 @@ export const PurchaseOrderDetails: React.FC = () => {
       <CompanyHeader />
         <div className="flex justify-between items-center mb-8 print:mb-4">
         <h1 className="text-2xl font-semibold text-gray-900 print:text-lg">Purchase Order: {order.orderNumber}</h1>
-        <div className="space-x-4">
-          <button
+        <div className="space-x-4">          <button
             onClick={handlePrint}
             className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md print:hidden"
           >
@@ -133,6 +154,15 @@ export const PurchaseOrderDetails: React.FC = () => {
           >
             {isEditing ? 'Cancel' : 'Edit'}
           </button>
+          {!isEditing && (
+            <button
+              onClick={handleDeleteConfirm}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md print:hidden"
+            >
+              <Trash className="h-4 w-4 inline mr-1" />
+              Delete
+            </button>
+          )}
           {isEditing && (
             <button
               onClick={handleSave}
@@ -295,6 +325,30 @@ export const PurchaseOrderDetails: React.FC = () => {
           )}
         </div>
       </div>
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 print:hidden">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
+            <p className="mb-6 text-gray-700">
+              Are you sure you want to delete purchase order <span className="font-medium">#{order.orderNumber}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
