@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PurchaseOrder, LineItem } from '../types';
+import { API_BASE_URL } from '../utils/apiConfig';
+import axios from 'axios';
 
-const API_URL = 'http://127.0.0.1:5000/api';
+const API_URL = API_BASE_URL;
 
 interface PurchaseOrderContextType {
   purchaseOrders: PurchaseOrder[];
@@ -33,35 +35,47 @@ export const PurchaseOrderProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     // Fetch orders from backend when component mounts
     setLoading(true);
-    fetch(`${API_URL}/purchase-orders`)
-      .then(response => response.json())
-      .then(data => setPurchaseOrders(data))
+    axios.get(`${API_URL}/purchase-orders`)
+      .then(response => setPurchaseOrders(response.data))
       .catch(error => console.error('Error fetching purchase orders:', error))
       .finally(() => setLoading(false));
   }, []);
 
-  const addPurchaseOrder = async (order: Omit<PurchaseOrder, 'id' | 'createdAt' | 'status'>) => {
+  const addPurchaseOrder = async (order: Omit<PurchaseOrder, 'id' | 'createdAt' | 'status'>): Promise<PurchaseOrder> => {
     try {
-      console.log('Sending request to:', `${API_URL}/purchase-orders`);
-      console.log('Request data:', order);
+      const formattedLineItems = order.lineItems.map(item => ({
+        id: item.id || `temp-${Date.now()}-${Math.random()}`,
+        description: item.description,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice)
+      }));
       
-      const response = await fetch(`${API_URL}/purchase-orders`, {
-        method: 'POST',
+      console.log('Sending API request to:', `${API_URL}/purchase-orders`);
+      console.log('Request payload:', {
+        ...order,
+        lineItems: formattedLineItems,
+        subtotal: Number(order.subtotal),
+        taxRate: Number(order.taxRate),
+        taxAmount: Number(order.taxAmount),
+        total: Number(order.total)
+      });
+      
+      const response = await axios.post(`${API_URL}/purchase-orders`, {
+        ...order,
+        lineItems: formattedLineItems,
+        subtotal: Number(order.subtotal),
+        taxRate: Number(order.taxRate),
+        taxAmount: Number(order.taxAmount),
+        total: Number(order.total)
+      }, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(order),
+          'Accept': 'application/json'
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
-        throw new Error(errorData.error || `Server returned ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setPurchaseOrders(prev => [...prev, data]);
-      return data;
+      setPurchaseOrders(prev => [...prev, response.data]);
+      return response.data;
     } catch (error) {
       console.error('Error creating purchase order:', error);
       if (error instanceof Error) {
@@ -73,11 +87,8 @@ export const PurchaseOrderProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const getPurchaseOrder = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/purchase-orders/${id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch purchase order');
-      }
-      return await response.json();
+      const response = await axios.get(`${API_URL}/purchase-orders/${id}`);
+      return response.data;
     } catch (error) {
       console.error('Error fetching purchase order:', error);
       throw error;
@@ -86,34 +97,34 @@ export const PurchaseOrderProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updatePurchaseOrder = async (id: string, updates: Partial<PurchaseOrder>) => {
     try {
-      // Ensure we're sending the complete line items array
+      console.log('Updating purchase order:', id);
+      console.log('Update data:', updates);
+      
+      // Create the request data object
+      const requestData: any = {...updates};
+      
+      // Handle line items if present
       if (updates.lineItems) {
-        console.log('Updating order with line items:', updates.lineItems);
+        requestData.lineItems = updates.lineItems.map((item: LineItem) => ({
+          id: item.id || `temp-${Date.now()}-${Math.random()}`,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice)
+        }));
       }
-      const response = await fetch(`${API_URL}/purchase-orders/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          ...updates,
-          // Ensure line items have all required fields
-          lineItems: updates.lineItems?.map((item: LineItem) => ({
-            id: item.id || `temp-${Date.now()}-${Math.random()}`,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice
-          }))
-        }),
-      });
+      
+      // Ensure numeric fields are properly formatted
+      if (updates.subtotal !== undefined) requestData.subtotal = Number(updates.subtotal);
+      if (updates.taxRate !== undefined) requestData.taxRate = Number(updates.taxRate);
+      if (updates.taxAmount !== undefined) requestData.taxAmount = Number(updates.taxAmount);
+      if (updates.total !== undefined) requestData.total = Number(updates.total);
+      
+      // Log the final request data
+      console.log('Sending request data:', requestData);
+      
+      const response = await axios.put(`${API_URL}/purchase-orders/${id}`, requestData);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
-        throw new Error(errorData.error || `Server returned ${response.status}: ${response.statusText}`);
-      }
-
-      const updatedOrder = await response.json();
+      const updatedOrder = response.data;
       setPurchaseOrders(prev =>
         prev.map(order => (order.id === id ? updatedOrder : order))
       );
@@ -129,13 +140,7 @@ export const PurchaseOrderProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const deletePurchaseOrder = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/purchase-orders/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete purchase order');
-      }
+      await axios.delete(`${API_URL}/purchase-orders/${id}`);
 
       setPurchaseOrders(prev => prev.filter(order => order.id !== id));
     } catch (error) {

@@ -1,15 +1,48 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PlusCircle, List, FileText } from 'lucide-react';
 import { usePurchaseOrder } from '../contexts/PurchaseOrderContext';
 
 const Dashboard: React.FC = () => {
   const { purchaseOrders } = usePurchaseOrder();
-    const recentOrders = purchaseOrders.slice(-5).reverse();
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   
-  const totalSales = purchaseOrders.reduce((sum, order) => sum + order.total, 0);
-  const unpaidOrders = purchaseOrders.filter(o => o.status === 'unpaid').length;
-  const paidOrders = purchaseOrders.filter(o => o.status === 'paid').length;
+  useEffect(() => {
+    // Simple validation to make sure we have valid data
+    if (purchaseOrders && Array.isArray(purchaseOrders)) {
+      setIsLoading(false);
+    } else if (purchaseOrders === undefined) {
+      setIsLoading(true);
+    } else {
+      setHasError(true);
+      setIsLoading(false);
+    }
+  }, [purchaseOrders]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-500">Loading dashboard data...</div>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-red-500">Error loading dashboard data. Please refresh the page.</div>
+      </div>
+    );
+  }
+
+  // Safely process purchase orders  
+  const validPurchaseOrders = Array.isArray(purchaseOrders) ? purchaseOrders : [];
+  const recentOrders = validPurchaseOrders.slice(-5).reverse();
+  
+  const totalSales = validPurchaseOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+  const unpaidOrders = validPurchaseOrders.filter(o => o.status === 'unpaid').length;
+  const paidOrders = validPurchaseOrders.filter(o => o.status === 'paid').length;
   
   return (
     <div className="space-y-6">
@@ -82,22 +115,23 @@ const Dashboard: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="font-medium text-gray-800">
-                      PO #{order.orderNumber}
+                      PO #{order.orderNumber || 'Unknown'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {order.customer.name} • {new Date(order.createdAt).toLocaleDateString()}
+                      {order.customer?.name || 'Unknown Customer'} • {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'No Date'}
                     </p>
                   </div>
-                  <div className="flex items-center">                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      order.status === 'unpaid' 
+                  <div className="flex items-center">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      !order.status || order.status === 'unpaid' 
                         ? 'bg-yellow-100 text-yellow-800' 
                         : order.status === 'paid'
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      {order.status ? (order.status.charAt(0).toUpperCase() + order.status.slice(1)) : 'Unpaid'}
                     </span>
-                    <p className="ml-4 font-medium">${order.total.toFixed(2)}</p>
+                    <p className="ml-4 font-medium">${(order.total || 0).toFixed(2)}</p>
                   </div>
                 </div>
               </Link>

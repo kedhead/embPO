@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Test Page</title>
+    <style>
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: white;
+            }
+            .container {
+                padding: 20px;
+            }
+            .print-logo {
+                display: block;
+                max-height: 60px;
+                width: auto;
+                margin: 0 auto;
+            }
+            .header {
+                text-align: center;
+                border-bottom: 1px solid #ccc;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }
+            .title {
+                font-size: 24px;
+                font-weight: bold;
+            }
+            .info {
+                font-size: 16px;
+                color: #333;
+            }
+            .status-badge {
+                display: inline-block;
+                padding: 5px 10px;
+                border-radius: 15px;
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            th {
+                background-color: #f9f9f9;
+            }
+        }
+    </style>
+</head>
+<body>    <div class="container">
+        <div class="header">
+            <h1 class="title">StitchPay Test Print</h1>
+            <p class="info">This is a test page to verify print functionality</p>
+        </div>
+        
+        <div>
+            <h2>Purchase Order: #12345</h2>
+            <p>Created: 5/16/2025</p>
+            <span class="status-badge">Paid</span>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Custom T-Shirt</td>
+                    <td>5</td>
+                    <td>$25.00</td>
+                    <td>$125.00</td>
+                </tr>
+                <tr>
+                    <td>Logo Embroidery</td>
+                    <td>10</td>
+                    <td>$15.00</td>
+                    <td>$150.00</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="text-align: right;">
+            <p>Subtotal: $275.00</p>
+            <p>Tax (10%): $27.50</p>
+            <p style="font-weight: bold;">Total: $302.50</p>
+        </div>
+    </div>
+    
+    <script>
+        // Print automatically when loaded
+        window.onload = function() {
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

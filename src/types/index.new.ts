@@ -1,4 +1,4 @@
-export type PurchaseOrderStatus = 'pending' | 'completed' | 'cancelled';
+export type PurchaseOrderStatus = 'unpaid' | 'paid' | 'cancelled';
 
 export interface LineItem {
   id: string;

@@ -1,14 +1,31 @@
 import os
-from flask import Flask
+import sys
+from flask import Flask, jsonify
 from flask_cors import CORS
 from extensions import db, logger # Import extensions
+from waitress import serve
+
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(os.path.dirname(__file__))
+    
+    return os.path.join(base_path, relative_path)
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, 
+                template_folder=resource_path('templates'),
+                static_folder=resource_path('static'))
 
+    # Ensure instance directory exists
+    instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
+    os.makedirs(instance_path, exist_ok=True)
+    
     # Database configuration
-    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "instance", "stitchpay.db")}'
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path, "stitchpay.db")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Default Email Configuration (can be overridden by environment variables)
@@ -46,14 +63,47 @@ def create_app():
     # Use the init_mail function to initialize mail
     from extensions import init_mail
     init_mail(app)
+    
+    # Add global error handler
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        logger.exception("Unhandled exception occurred", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+    # Add a direct health check route (not part of blueprints)
+    @app.route('/health', methods=['GET'])
+    def health_check():
+        logger.info("Health check endpoint accessed")
+        return jsonify({"status": "ok", "message": "Flask backend is running"}), 200
+
+    # Add a root endpoint for direct access to the server
+    @app.route('/', methods=['GET'])
+    def root():
+        logger.info("Root endpoint accessed")
+        # List all registered routes for debugging
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append(str(rule))
+        
+        return jsonify({
+            "status": "ok", 
+            "message": "StitchPay API Server", 
+            "version": "1.0.0",
+            "routes": routes,
+            "endpoints": ["/", "/health", "/api/health", "/api/test"]
+        }), 200
 
     return app
 
 if __name__ == '__main__':
     app = create_app()
-    # Ensure instance directory exists
-    instance_path = os.path.join(os.path.dirname(__file__), 'instance')
-    os.makedirs(instance_path, exist_ok=True)
-    logger.info(f"Instance path: {instance_path}")
     logger.info("Starting StitchPay backend server...")
-    app.run(host='0.0.0.0', debug=True, port=5000)
+    # Check if running as packaged app
+    is_packaged = getattr(sys, 'frozen', False)
+    logger.info(f"Running as packaged app: {is_packaged}")
+
+    # Use Waitress for production
+    if is_packaged:
+        serve(app, host='0.0.0.0', port=5000)
+    else:
+        app.run(host='0.0.0.0', debug=True, port=5000)

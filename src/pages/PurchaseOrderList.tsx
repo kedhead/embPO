@@ -21,7 +21,7 @@ const PurchaseOrderList: React.FC = () => {
       return (
         order.orderNumber.toLowerCase().includes(searchLower) ||
         order.customer.name.toLowerCase().includes(searchLower) ||
-        order.customer.email.toLowerCase().includes(searchLower)
+        (order.customer.email?.toLowerCase().includes(searchLower) ?? false)
       );
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -62,8 +62,8 @@ const PurchaseOrderList: React.FC = () => {
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="paid">Paid</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
@@ -151,9 +151,9 @@ const PurchaseOrderList: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        order.status === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-800' 
-                          : order.status === 'completed'
+                        order.status === 'unpaid' 
+                          ? 'bg-amber-100 text-amber-800' 
+                          : order.status === 'paid'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}>

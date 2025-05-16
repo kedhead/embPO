@@ -4,7 +4,7 @@ import { usePurchaseOrder } from '../contexts/PurchaseOrderContext';
 import { PurchaseOrder, LineItem, PurchaseOrderStatus } from '../types';
 import { setupPrintSettings } from '../utils/printSettings';
 import { CompanyHeader } from '../components/CompanyHeader';
-import { Trash, Mail } from 'lucide-react';
+import { Trash } from 'lucide-react';
 
 export const PurchaseOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,7 +15,7 @@ export const PurchaseOrderDetails: React.FC = () => {
   const [editedStatus, setEditedStatus] = useState<PurchaseOrderStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);  const [emailStatus, setEmailStatus] = useState<{loading: boolean, success?: boolean, message?: string}>({loading: false});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -70,43 +70,86 @@ export const PurchaseOrderDetails: React.FC = () => {
     const total = subtotal + taxAmount;
     return { subtotal, taxRate: taxRate * 100, taxAmount, total };
   };  const handlePrint = () => {
+    // Ensure all styles are loaded for printing
     const style = document.createElement('style');
     style.innerHTML = setupPrintSettings();
     
     // Temporarily store the original title
     const originalTitle = document.title;
+    
     // Clear the title to prevent it from appearing in print
     document.title = '';
     
-    document.head.appendChild(style);
-    window.print();
+    // Fix status badge colors for printing
+    const statusBadges = document.querySelectorAll('[class*="bg-amber-100"], [class*="bg-green-100"], [class*="bg-red-100"]');
+    statusBadges.forEach(badge => {
+      const originalClasses = badge.className;
+      badge.setAttribute('data-original-classes', originalClasses);
+      badge.className = `${originalClasses} print-status-badge`;
+    });
     
-    // Restore the original title
-    document.title = originalTitle;
-    document.head.removeChild(style);
+    // Set a timeout to ensure browser has time to process before printing
+    setTimeout(() => {
+      document.head.appendChild(style);
+      
+      try {
+        window.print();
+      } catch (error) {
+        console.error('Print error:', error);
+      } finally {
+        // Restore original title
+        document.title = originalTitle;
+        document.head.removeChild(style);
+        
+        // Restore original classes for badges
+        statusBadges.forEach(badge => {
+          if (badge.hasAttribute('data-original-classes')) {
+            badge.className = badge.getAttribute('data-original-classes') || '';
+            badge.removeAttribute('data-original-classes');
+          }
+        });
+      }
+    }, 200); // Short delay to help with rendering
   };
   const handleSave = async () => {
     if (!order || !id) return;
     
     try {
+      // Calculate new totals if line items have changed
       const { subtotal, taxRate, taxAmount, total } = calculateTotals(editedLineItems);
       
-      await updatePurchaseOrder(id, {
-        ...order,
-        lineItems: editedLineItems,
-        status: editedStatus || order.status,
-        subtotal,
-        taxRate,
-        taxAmount,
-        total
-      });
+      // Prepare the update object
+      const updateData: Partial<PurchaseOrder> = {};
+      
+      // Only include changed fields
+      if (JSON.stringify(editedLineItems) !== JSON.stringify(order.lineItems)) {
+        updateData.lineItems = editedLineItems;
+        updateData.subtotal = subtotal;
+        updateData.taxRate = taxRate;
+        updateData.taxAmount = taxAmount;
+        updateData.total = total;
+      }
+      
+      // Include status if it's changed
+      if (editedStatus && editedStatus !== order.status) {
+        updateData.status = editedStatus;
+      }
+      
+      console.log('Saving changes:', updateData);
+      
+      // Only send the update if there are changes
+      if (Object.keys(updateData).length > 0) {
+        await updatePurchaseOrder(id, updateData);
+      }
       
       setIsEditing(false);
       // Refresh order data
       const updatedOrder = await getPurchaseOrder(id);
       setOrder(updatedOrder);
       setEditedLineItems(updatedOrder.lineItems);
+      
     } catch (err) {
+      console.error('Error saving changes:', err);
       setError('Failed to save changes');
     }
   };
@@ -130,70 +173,11 @@ export const PurchaseOrderDetails: React.FC = () => {
     }
   };
 
-  const handleEmail = async () => {
-    if (!order || !id) return;
-    
-    try {
-      setEmailStatus({loading: true});
-      
-      // Check if customer email exists
-      if (!order.customer.email) {
-        setEmailStatus({
-          loading: false,
-          success: false,
-          message: 'Customer email is missing. Please add an email address first.'
-        });
-        return;
-      }
-        // Send the purchase order as email
-      console.log(`Sending email to ${order.customer.email} for order ${id}`);
-      const response = await fetch(`/api/purchase-orders/${id}/email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: order.customer.email,
-          subject: `Purchase Order ${order.orderNumber} from StitchPay`,
-        })
-      });
-      
-      console.log('Email API response status:', response.status);
-      const result = await response.json();
-      console.log('Email API response:', result);
-        if (response.ok) {
-        setEmailStatus({
-          loading: false,
-          success: true,
-          message: `Email with PDF attachment sent successfully to ${order.customer.email}`
-        });
-      } else {
-        setEmailStatus({
-          loading: false,
-          success: false,
-          message: result.message || 'Failed to send email'
-        });
-      }
-    } catch (error) {
-      console.error('Error sending email:', error);
-      setEmailStatus({
-        loading: false,
-        success: false,
-        message: 'An error occurred while sending the email'
-      });
-    }
-    
-    // Clear status message after 5 seconds
-    setTimeout(() => {
-      setEmailStatus({loading: false});
-    }, 5000);
-  };
-
   if (loading) return <div>Loading...</div>;
   if (error) return <div className="error">{error}</div>;
   if (!order) return <div>Order not found</div>;
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-0 print:bg-white">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-0 print:bg-white print:max-w-none">
       <CompanyHeader />
         <div className="flex justify-between items-start mb-6 print:mb-4">
         <div>
@@ -203,7 +187,7 @@ export const PurchaseOrderDetails: React.FC = () => {
             <div className="mt-2">
               <span className={`px-3 py-1 text-sm rounded-full inline-block ${
                 order.status === 'unpaid' 
-                  ? 'bg-yellow-100 text-yellow-800' 
+                  ? 'bg-amber-100 text-amber-800' 
                   : order.status === 'paid'
                   ? 'bg-green-100 text-green-800'
                   : 'bg-red-100 text-red-800'
@@ -228,7 +212,7 @@ export const PurchaseOrderDetails: React.FC = () => {
               </select>
             ) : (
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                order.status === 'unpaid' ? 'bg-yellow-100 text-yellow-800' :
+                order.status === 'unpaid' ? 'bg-amber-100 text-amber-800' :
                 order.status === 'paid' ? 'bg-green-100 text-green-800' :
                 'bg-red-100 text-red-800'
               }`}>
@@ -242,17 +226,6 @@ export const PurchaseOrderDetails: React.FC = () => {
               className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md"
             >
               Print
-            </button>
-            <button
-              onClick={handleEmail}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md"
-              disabled={emailStatus.loading}
-            >
-              {emailStatus.loading ? 'Sending...' : 
-              <>
-                <Mail className="h-4 w-4 inline mr-1" />
-                Email
-              </>}
             </button>
             <button
               onClick={handleEditToggle}
@@ -284,11 +257,7 @@ export const PurchaseOrderDetails: React.FC = () => {
             
           </div>
         </div>
-      </div>      {emailStatus.message && (
-        <div className={`mb-4 p-4 rounded-md ${emailStatus.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-          {emailStatus.message}
-        </div>
-      )}
+      </div>
       
       <div className="bg-white shadow-sm rounded-lg p-6 mb-8 print:shadow-none print:p-0 print:mb-4">
         <h2 className="text-xl font-semibold text-gray-900 mb-4 print:text-base print:mb-2">Customer Information</h2><div className="grid grid-cols-2 gap-4 print:gap-2">
@@ -331,7 +300,7 @@ export const PurchaseOrderDetails: React.FC = () => {
         
         <div className="overflow-x-auto print:overflow-visible">
           <table className="min-w-full divide-y divide-gray-200 print:border print:border-gray-200">
-            <thead className="bg-gray-50">              <tr>
+            <thead className="bg-gray-50 print:bg-gray-100">              <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider print:py-2 print:text-[10px]">Description</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider print:py-2 print:text-[10px]">Quantity</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider print:py-2 print:text-[10px]">Unit Price</th>

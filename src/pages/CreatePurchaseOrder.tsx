@@ -44,6 +44,13 @@ const CreatePurchaseOrder: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [taxRate, setTaxRate] = useState(settings.taxRate);
   
+  // Set due date to 30 days from now
+  const [dueDate, setDueDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 30); // Add 30 days
+    return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  });
+  
   const { subtotal, taxAmount, total } = calculateTotal(lineItems, taxRate);
   
   const handleAddLineItem = () => {
@@ -96,18 +103,23 @@ const CreatePurchaseOrder: React.FC = () => {
       const orderData = {
         orderNumber,
         customer: {
-          ...customer,
           name: customer.name.trim(),
-          email: customer.email.trim(),
-          phone: customer.phone.trim(),
-          address: customer.address.trim()
+          email: customer.email?.trim() || '',
+          phone: customer.phone?.trim() || '',
+          address: customer.address?.trim() || ''
         },
-        lineItems: validLineItems,
+        lineItems: validLineItems.map(item => ({
+          id: item.id,
+          description: item.description.trim(),
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice)
+        })),
         subtotal: Number(subtotal.toFixed(2)),
         taxRate: Number(taxRate.toFixed(2)),
         taxAmount: Number(taxAmount.toFixed(2)),
         total: Number(total.toFixed(2)),
-        notes: notes.trim()
+        notes: notes.trim() || '',
+        dueDate: dueDate
       };
 
       console.log('Submitting order data:', orderData);
@@ -158,6 +170,18 @@ const CreatePurchaseOrder: React.FC = () => {
                 min="0"
                 value={taxRate}
                 onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Due Date
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -254,7 +278,7 @@ const CreatePurchaseOrder: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {lineItems.map((item, index) => (
+                {lineItems.map((item) => (
                   <tr key={item.id}>
                     <td className="px-3 py-2">
                       <input

@@ -195,13 +195,13 @@ const PurchaseOrderDetails: React.FC = () => {
                   }
                 }}
                 className="border rounded p-2"
-              >                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
+              >                <option value="unpaid">Unpaid</option>
+                <option value="paid">Paid</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             ) : (              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                displayOrder.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                displayOrder.status === 'approved' ? 'bg-green-100 text-green-800' :
+                displayOrder.status === 'unpaid' ? 'bg-yellow-100 text-yellow-800' :
+                displayOrder.status === 'paid' ? 'bg-green-100 text-green-800' :
                 'bg-red-100 text-red-800'
               }`}>
                 {displayOrder.status.charAt(0).toUpperCase() + displayOrder.status.slice(1)}

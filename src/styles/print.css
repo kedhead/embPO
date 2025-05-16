@@ -1,0 +1,75 @@
+/* Print-specific styles that will only apply when printing */
+@media print {
+  /* Basic page setup */
+  @page {
+    size: auto;
+    margin: 0.3in 0.5in 0.5in;
+  }
+  
+  /* General print styles */  body {
+    margin: 0;
+    padding: 0 !important;
+    background-color: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+    /* Hiding elements that shouldn't appear in print */
+  .print\:hidden,
+  button,
+  nav,
+  footer,
+  [role="dialog"] {
+    display: none !important;
+  }
+  
+  /* Table styles for print */
+  table.print\:border,
+  table.print\:border th,
+  table.print\:border td {
+    border-collapse: collapse !important;
+    border: 1px solid #ddd !important;
+  }
+  
+  /* Table cells */
+  th, td {
+    padding: 8px !important;
+    text-align: left !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+  
+  thead {
+    display: table-header-group !important;
+  }
+  
+  /* Text adjustments */
+  .print\:text-sm {
+    font-size: 0.875rem !important;
+  }
+  
+  .print\:text-xs {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Status badges */
+  .print-status-badge,
+  [class*="bg-amber-100"],
+  [class*="bg-green-100"],
+  [class*="bg-red-100"] {
+    background-color: #f9f9f9 !important;
+    border: 1px solid #ddd !important;
+    color: #000 !important;
+    padding: 2px 8px !important;
+    border-radius: 12px !important;
+  }
+  
+  /* Ensure page breaks don't happen inside components */
+  .print\:no-break {
+    page-break-inside: avoid !important;
+  }
+  
+  /* Fix for CompanyHeader visibility */
+  .hidden.print\:block {
+    display: block !important;
+  }
+}

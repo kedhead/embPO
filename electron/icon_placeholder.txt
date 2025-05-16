@@ -1,0 +1,8 @@
+You need to create or download an icon file (icon.ico) for your StitchPay application and place it in this directory.
+
+The icon file should be in .ico format and ideally include multiple sizes (16x16, 32x32, 48x48, 64x64, 128x128).
+
+Several online tools can convert PNG images to ICO format with multiple sizes, such as:
+- https://convertio.co/png-ico/
+- https://icoconvert.com/
+- https://www.aconvert.com/icon/png-to-ico/

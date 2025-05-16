@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order from StitchPay</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: #4A5568;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+            margin-top: 20px;
+        }
+        .highlight {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Purchase Order #{{ order_number }}</h1>
+    </div>
+    <div class="content">
+        <p>Dear {{ customer_name }},</p>
+        
+        <p>Thank you for your business. Please find attached your purchase order from StitchPay.</p>
+        
+        <p>Order Details:</p>
+        <ul>
+            <li>Purchase Order Number: <span class="highlight">{{ order_number }}</span></li>
+            <li>Date: <span class="highlight">{{ order_date }}</span></li>
+            <li>Total Amount: <span class="highlight">${{ total }}</span></li>
+        </ul>
+        
+        <p>If you have any questions regarding this purchase order, please don't hesitate to contact us.</p>
+        
+        <p>Best regards,<br>
+        The StitchPay Team</p>
+    </div>
+    <div class="footer">
+        <p>This email was sent automatically from the StitchPay system. Please do not reply to this email.</p>
+        <p>&copy; {{ current_year }} StitchPay. All rights reserved.</p>
+    </div>
+</body>
+</html>

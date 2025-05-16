@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"args": [],
+			"command": "Set-Location -Path \"K:\\AI-Projects\\stitchpay\"; K:\\AI-Projects\\stitchpay\\venv\\Scripts\\python.exe create_backup.py",
+			"group": "none",
+			"isBackground": false,
+			"label": "Create Backup",
+			"problemMatcher": [],
+			"type": "shell"
+		}
+	]
+}

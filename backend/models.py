@@ -8,12 +8,21 @@ class JSONType(TypeDecorator):
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            return json.dumps(value)
+            try:
+                return json.dumps(value)
+            except (TypeError, ValueError) as e:
+                # Log the error and the value for debugging
+                print(f"Error serializing JSON: {str(e)}, Value: {value}")
+                raise ValueError(f"Cannot serialize to JSON: {str(e)}")
         return None
 
     def process_result_value(self, value, dialect):
         if value is not None:
-            return json.loads(value)
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError as e:
+                print(f"Error deserializing JSON: {str(e)}, Value: {value}")
+                return {}  # Return empty dict on error instead of failing
         return None
 
 class PurchaseOrder(db.Model):
@@ -30,6 +39,7 @@ class PurchaseOrder(db.Model):
     notes = db.Column(db.Text)
     status = db.Column(db.String(20), nullable=False, default='unpaid')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    due_date = db.Column(db.DateTime, nullable=True)
 
     def to_dict(self):
         return {
@@ -43,5 +53,6 @@ class PurchaseOrder(db.Model):
             'total': self.total,
             'notes': self.notes,
             'status': self.status,
-            'createdAt': self.created_at.isoformat()
+            'createdAt': self.created_at.isoformat(),
+            'dueDate': self.due_date.isoformat() if self.due_date else None
         }

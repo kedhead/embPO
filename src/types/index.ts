@@ -1,7 +1,6 @@
 export interface Customer {
-  id: string;
   name: string;
-  email: string;
+  email?: string;
   phone?: string;
   address?: string;
 }
@@ -23,9 +22,10 @@ export interface PurchaseOrder {
   taxAmount: number;
   total: number;
   notes?: string;
-  status: 'pending' | 'approved' | 'cancelled';
+  status: 'unpaid' | 'paid' | 'cancelled';
   createdAt: string;
   updatedAt?: string;
+  dueDate?: string;
 }
 
-export type PurchaseOrderStatus = 'pending' | 'approved' | 'cancelled';
+export type PurchaseOrderStatus = 'unpaid' | 'paid' | 'cancelled';

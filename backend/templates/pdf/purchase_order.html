@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order #{{ order.order_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .company-info {
+            margin-bottom: 20px;
+        }
+        .order-details {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .order-info, .customer-info {
+            flex: 1;
+        }
+        h1 {
+            color: #4A5568;
+            margin-bottom: 5px;
+        }
+        h2 {
+            color: #4A5568;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th {
+            background-color: #f8f8f8;
+            text-align: left;
+            padding: 10px;
+            border-bottom: 2px solid #ddd;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .totals {
+            margin-left: auto;
+            width: 300px;
+        }
+        .totals table {
+            width: 100%;
+        }
+        .totals td {
+            padding: 5px;
+        }
+        .totals tr.total {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .notes {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-draft { background-color: #e0e7ff; color: #3730a3; }
+        .status-sent { background-color: #c7d2fe; color: #4f46e5; }
+        .status-paid { background-color: #d1fae5; color: #065f46; }
+        .status-overdue { background-color: #fee2e2; color: #b91c1c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>StitchPay</h1>
+                <p>Modern Billing Solutions</p>
+            </div>
+            <div>
+                <h2>Purchase Order</h2>
+                {% if order.status == 'draft' %}
+                <span class="status-badge status-draft">Draft</span>
+                {% elif order.status == 'sent' %}
+                <span class="status-badge status-sent">Sent</span>
+                {% elif order.status == 'paid' %}
+                <span class="status-badge status-paid">Paid</span>
+                {% elif order.status == 'overdue' %}
+                <span class="status-badge status-overdue">Overdue</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="company-info">
+            <p>
+                StitchPay, Inc.<br>
+                123 Billing Street<br>
+                San Francisco, CA 94103<br>
+                United States<br>
+                support@stitchpay.com
+            </p>
+        </div>
+        
+        <div class="order-details">
+            <div class="order-info">
+                <h3>Order Details</h3>
+                <p>
+                    <strong>Order Number:</strong> {{ order.order_number }}<br>
+                    <strong>Order Date:</strong> {{ order.created_at.strftime('%B %d, %Y') }}<br>
+                    <strong>Due Date:</strong> {{ order.due_date.strftime('%B %d, %Y') if order.due_date else 'Not specified' }}
+                </p>
+            </div>
+            
+            <div class="customer-info">
+                <h3>Customer</h3>
+                <p>
+                    <strong>{{ order.customer.name }}</strong><br>
+                    {% if order.customer.address %}
+                    {{ order.customer.address }}<br>
+                    {% endif %}
+                    {% if order.customer.email %}
+                    {{ order.customer.email }}<br>
+                    {% endif %}
+                    {% if order.customer.phone %}
+                    {{ order.customer.phone }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        
+        <h2>Order Items</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>                {% for item in order.line_items %}
+                <tr>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ "%.2f"|format(item.unitPrice if 'unitPrice' in item else item.unit_price) }}</td>
+                    <td>${{ "%.2f"|format(item.quantity * (item.unitPrice if 'unitPrice' in item else item.unit_price)) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="totals">
+            <table>
+                <tr>
+                    <td>Subtotal:</td>
+                    <td>${{ "%.2f"|format(order.subtotal) }}</td>
+                </tr>
+                <tr>
+                    <td>Tax ({{ "%.2f"|format(order.tax_rate) }}%):</td>
+                    <td>${{ "%.2f"|format(order.tax_amount) }}</td>
+                </tr>
+                <tr class="total">
+                    <td>Total:</td>
+                    <td>${{ "%.2f"|format(order.total) }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        {% if order.notes %}
+        <div class="notes">
+            <h3>Notes</h3>
+            <p>{{ order.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

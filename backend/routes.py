@@ -12,47 +12,72 @@ bp = Blueprint('api', __name__)
 
 @bp.route('/purchase-orders', methods=['POST'])
 def create_purchase_order():
-    # Removed mail import since it's not used in this function
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-
-    required_fields = ['customer', 'lineItems', 'subtotal', 'taxRate', 'taxAmount', 'total']
-    for field in required_fields:
-        if field not in data:
-            return jsonify({"error": f"Missing required field: {field}"}), 400
-
     try:
+        # Debug log the request
+        data = request.get_json()
+        if not data:
+            logger.error("No JSON data received in request")
+            return jsonify({"error": "No data provided"}), 400
+        
+        logger.debug(f"Received purchase order data: {data}")
+
+        required_fields = ['customer', 'lineItems', 'subtotal', 'taxRate', 'taxAmount', 'total']
+        for field in required_fields:
+            if field not in data:
+                logger.error(f"Missing required field: {field}")
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
         order_id = str(uuid.uuid4())
         # Use the provided orderNumber if available, otherwise generate one
         order_number = data.get('orderNumber', f"PO-{datetime.now().strftime('%Y%m%d%H%M%S')}")
         
         due_date_str = data.get('dueDate')
         due_date_obj = None
+        logger.debug(f"Due date string: {due_date_str}")
         if due_date_str:
             try:
+                # First try ISO format with Z
                 due_date_obj = datetime.fromisoformat(due_date_str.replace('Z', '+00:00'))
-            except ValueError:
-                return jsonify({"error": "Invalid dueDate format. Use ISO format."}), 400
+                logger.debug(f"Parsed due date: {due_date_obj}")
+            except ValueError as e:
+                try:
+                    # Try YYYY-MM-DD format
+                    due_date_obj = datetime.strptime(due_date_str, '%Y-%m-%d')
+                    logger.debug(f"Parsed due date with YYYY-MM-DD format: {due_date_obj}")
+                except ValueError as e2:
+                    logger.error(f"Error parsing due date: {e2}")
+                    return jsonify({"error": "Invalid dueDate format. Use ISO format or YYYY-MM-DD."}), 400
 
-        new_order = PurchaseOrder(
-            id=order_id,
-            order_number=order_number,
-            customer=data['customer'],
-            line_items=data['lineItems'],
-            subtotal=float(data['subtotal']),
-            tax_rate=float(data['taxRate']),
-            tax_amount=float(data['taxAmount']),
-            total=float(data['total']),
-            notes=data.get('notes'),
-            status=data.get('status', 'unpaid')
-        )
+        logger.debug("Creating new order object")
+        try:
+            new_order = PurchaseOrder(
+                id=order_id,
+                order_number=order_number,
+                customer=data['customer'],
+                line_items=data['lineItems'],
+                subtotal=float(data['subtotal']),
+                tax_rate=float(data['taxRate']),
+                tax_amount=float(data['taxAmount']),
+                total=float(data['total']),
+                notes=data.get('notes', ''),
+                status=data.get('status', 'unpaid')
+            )
+            logger.debug("Order object created successfully")
+        except Exception as e:
+            logger.error(f"Error creating PurchaseOrder object: {str(e)}", exc_info=True)
+            return jsonify({"error": f"Error creating purchase order object: {str(e)}"}), 400
         
         # Set the due_date separately if provided
         if due_date_obj:
+            logger.debug(f"Setting due_date to {due_date_obj}")
             new_order.due_date = due_date_obj
+        
+        logger.debug("Adding order to database session")
         db.session.add(new_order)
+        
+        logger.debug("Committing to database")
         db.session.commit()
+        logger.info(f"Purchase order created successfully: {order_id}")
 
         return jsonify(new_order.to_dict()), 201
 
@@ -62,7 +87,7 @@ def create_purchase_order():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error creating purchase order: {e}", exc_info=True)
-        return jsonify({"error": "An unknown error occurred"}), 500
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
 @bp.route('/purchase-orders', methods=['GET'])
 def get_purchase_orders():
@@ -103,11 +128,24 @@ def update_purchase_order(order_id):
         if 'total' in data:
             order.total = data['total']
         if 'status' in data:
+            logger.debug(f"Updating status from {order.status} to {data['status']}")
             order.status = data['status']
         if 'notes' in data:
             order.notes = data['notes']
         if 'dueDate' in data and data['dueDate']:
-            order.due_date = datetime.strptime(data['dueDate'], '%Y-%m-%d')
+            try:
+                # First try ISO format
+                due_date_obj = datetime.fromisoformat(data['dueDate'].replace('Z', '+00:00'))
+                order.due_date = due_date_obj
+                logger.debug(f"Updated due_date to {due_date_obj} from ISO format")
+            except ValueError:
+                try:
+                    # Then try YYYY-MM-DD format
+                    order.due_date = datetime.strptime(data['dueDate'], '%Y-%m-%d')
+                    logger.debug(f"Updated due_date using YYYY-MM-DD format")
+                except ValueError as e:
+                    logger.error(f"Error parsing due date: {e}")
+                    return jsonify({"error": "Invalid dueDate format"}), 400
         
         db.session.commit()
         logger.info(f"Successfully updated purchase order {order_id}")
@@ -136,9 +174,16 @@ def delete_purchase_order(order_id):
         db.session.rollback()
         return jsonify({"error": error_msg}), 500
 
-# Removed email settings and test email routes
-# Removed /purchase-orders/<string:order_id>/email route
-# Removed generate_purchase_order_pdf_reportlab function (assuming it's not used elsewhere or will be moved)
+@bp.route('/test', methods=['GET'])
+def test_endpoint():
+    logger.info("Test endpoint accessed")
+    return jsonify({"message": "Backend is working correctly", "status": "ok"}), 200
 
-# If generate_purchase_order_pdf_reportlab is needed for other purposes, it should be kept or moved.
-# For now, it's removed as part of the email rollback.
+@bp.route('/health', methods=['GET'])
+def api_health_check():
+    """A simple endpoint to verify that the API is working"""
+    logger.info("API Health check endpoint called")
+    return jsonify({
+        "status": "ok",
+        "message": "API is operational"
+    }), 200

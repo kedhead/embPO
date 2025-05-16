@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -36,6 +36,18 @@ const Settings: React.FC = () => {
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };
+
+  useEffect(() => {
+    // Fetch existing company settings
+    setFormData({
+      companyName: settings.companyName,
+      companyAddress: settings.companyAddress,
+      companyPhone: settings.companyPhone,
+      companyEmail: settings.companyEmail,
+      taxRate: settings.taxRate.toString(),
+      companyLogo: settings.companyLogo || ''
+    });
+  }, [settings]);
   
   return (
     <div className="max-w-3xl mx-auto">
