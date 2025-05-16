@@ -22,12 +22,12 @@ __pycache__/
 backend/build/
 backend/instance/*.db
 backend/instance/*.db-journal
+venv/
+backups/
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-!.vscode/settings.json
-!.vscode/tasks.json
 .idea
 .DS_Store
 *.suo
@@ -36,15 +36,3 @@ backend/instance/*.db-journal
 *.sln
 *.sw?
 .env
-
-# Backup files
-backups/
-
-# OS generated files
-Thumbs.db
-
-# Electron builder output
-out/
-
-# Specific temp files
-AI-Projects/
