@@ -3,18 +3,47 @@
   /* Basic page setup */
   @page {
     size: auto;
-    margin: 0.3in 0.5in 0.5in;
+    margin: 0.3in 0.5in 0.5in; /* Standardized margin */
+  }
+  @page :first {
+    margin-top: 0.3in;
+  }
+  @page :left {
+    margin-right: 0.5in; /* outer margin for duplex printing */
+  }
+  @page :right {
+    margin-left: 0.5in; /* outer margin for duplex printing */
   }
   
-  /* General print styles */  body {
-    margin: 0;
-    padding: 0 !important;
+  /* General print styles */
+  html {
     background-color: white !important;
-    color: black !important;
-    -webkit-print-color-adjust: exact !important;
+  }
+  body {
+    margin: 0 !important; /* Ensure no margin on body */
+    padding: 0 !important; /* Ensure no padding on body */
+    background-color: white !important;
+    color: black !important; /* Default text color to black */
+    -webkit-print-color-adjust: exact !important; 
     print-color-adjust: exact !important;
   }
-    /* Hiding elements that shouldn't appear in print */
+
+  /* Universal reset for backgrounds and shadows */
+  * {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure common text elements are black in print */
+  p, span, div, h1, h2, h3, h4, h5, h6, li, th, td, caption {
+      color: #000 !important;
+  }
+  /* Overwrite Tailwind text colors for print */
+  .text-gray-900, .text-gray-800, .text-gray-700, .text-gray-600, .text-gray-500 {
+      color: #000 !important;
+  }
+
+  /* Hiding elements that shouldn't appear in print */
   .print\:hidden,
   button,
   nav,
@@ -52,15 +81,22 @@
   }
   
   /* Status badges */
-  .print-status-badge,
+  .print-status-badge, /* Can be used as a utility print class */
   [class*="bg-amber-100"],
   [class*="bg-green-100"],
-  [class*="bg-red-100"] {
-    background-color: #f9f9f9 !important;
-    border: 1px solid #ddd !important;
-    color: #000 !important;
-    padding: 2px 8px !important;
+  [class*="bg-red-100"],
+  /* Add any other Tailwind background classes used for statuses */
+  [class*="bg-gray-100"] /* Example if other statuses use different BGs */
+  {
+    background-color: #f0f0f0 !important; /* Light gray background for print */
+    border: 1px solid #ccc !important;     /* Clear border */
+    color: #000 !important;                /* Black text */
+    padding: 3px 8px !important;          /* Adjusted padding for clarity */
     border-radius: 12px !important;
+    -webkit-print-color-adjust: auto !important; /* Allow this explicit override */
+    print-color-adjust: auto !important;         /* Allow this explicit override */
+    display: inline-block !important; /* Ensure proper display */
+    line-height: normal !important; /* Ensure text is vertically centered */
   }
   
   /* Ensure page breaks don't happen inside components */
@@ -71,5 +107,22 @@
   /* Fix for CompanyHeader visibility */
   .hidden.print\:block {
     display: block !important;
+  }
+
+  /* Layout adjustments for print */
+  .max-w-7xl {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Table page break controls */
+  table {
+    page-break-inside: auto;
+  }
+  
+  tr {
+    page-break-inside: avoid !important; /* More aggressive than just 'avoid' */
+    page-break-after: auto;
   }
 }
