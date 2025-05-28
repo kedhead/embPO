@@ -32,6 +32,17 @@ export const PurchaseOrderDetails: React.FC = () => {
     loadOrder();
   }, [id, getPurchaseOrder]);
 
+  useEffect(() => {
+    // Call setupPrintSettings for its side effects (e.g., attaching event listeners)
+    // The function now returns an empty string for styles, so no need to inject a style tag.
+    setupPrintSettings();
+
+    // Optional: If setupPrintSettings returned a cleanup function for its listeners,
+    // it would be called here. For now, we assume it manages its own listeners
+    // or they are removed when the component unmounts and the context is lost.
+    // No explicit cleanup is needed for the style tag as it's no longer added.
+  }, []); // Empty dependency array means this runs once on mount
+
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
     if (!isEditing) {
@@ -71,8 +82,8 @@ export const PurchaseOrderDetails: React.FC = () => {
     return { subtotal, taxRate: taxRate * 100, taxAmount, total };
   };  const handlePrint = () => {
     // Ensure all styles are loaded for printing
-    const style = document.createElement('style');
-    style.innerHTML = setupPrintSettings();
+    // const style = document.createElement('style');
+    // style.innerHTML = setupPrintSettings();
     
     // Temporarily store the original title
     const originalTitle = document.title;
@@ -81,16 +92,16 @@ export const PurchaseOrderDetails: React.FC = () => {
     document.title = '';
     
     // Fix status badge colors for printing
-    const statusBadges = document.querySelectorAll('[class*="bg-amber-100"], [class*="bg-green-100"], [class*="bg-red-100"]');
-    statusBadges.forEach(badge => {
-      const originalClasses = badge.className;
-      badge.setAttribute('data-original-classes', originalClasses);
-      badge.className = `${originalClasses} print-status-badge`;
-    });
+    // const statusBadges = document.querySelectorAll('[class*="bg-amber-100"], [class*="bg-green-100"], [class*="bg-red-100"]');
+    // statusBadges.forEach(badge => {
+    //   const originalClasses = badge.className;
+    //   badge.setAttribute('data-original-classes', originalClasses);
+    //   badge.className = `${originalClasses} print-status-badge`;
+    // });
     
     // Set a timeout to ensure browser has time to process before printing
     setTimeout(() => {
-      document.head.appendChild(style);
+      // document.head.appendChild(style);
       
       try {
         window.print();
@@ -99,15 +110,15 @@ export const PurchaseOrderDetails: React.FC = () => {
       } finally {
         // Restore original title
         document.title = originalTitle;
-        document.head.removeChild(style);
+        // document.head.removeChild(style);
         
         // Restore original classes for badges
-        statusBadges.forEach(badge => {
-          if (badge.hasAttribute('data-original-classes')) {
-            badge.className = badge.getAttribute('data-original-classes') || '';
-            badge.removeAttribute('data-original-classes');
-          }
-        });
+        // statusBadges.forEach(badge => {
+        //   if (badge.hasAttribute('data-original-classes')) {
+        //     badge.className = badge.getAttribute('data-original-classes') || '';
+        //     badge.removeAttribute('data-original-classes');
+        //   }
+        // });
       }
     }, 200); // Short delay to help with rendering
   };
